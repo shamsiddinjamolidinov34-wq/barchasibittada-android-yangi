@@ -1,0 +1,44 @@
+name: APK yigʻish
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni olish
+        uses: actions/checkout@v4
+
+      - name: Java 17 ni sozlash
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # MUHIM: Android Gradle Plugin 8.7.3 kamida Gradle 8.9 talab qiladi.
+      # Shuning uchun Gradle versiyasi aniq 8.10.2 qilib berilgan (8.6 yaramaydi).
+      - name: Gradle ni sozlash
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Debug APK yigʻish (tarmoq xatosi bo'lsa 3 marta urinadi)
+        run: |
+          for i in 1 2 3; do
+            if gradle assembleDebug --no-daemon --stacktrace; then
+              exit 0
+            fi
+            echo "Urinish $i muvaffaqiyatsiz. 20 soniyadan keyin qayta uriniladi..."
+            sleep 20
+          done
+          exit 1
+
+      - name: APK ni yuklash
+        uses: actions/upload-artifact@v4
+        with:
+          name: barchasibittada-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
